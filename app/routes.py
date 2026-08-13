@@ -1,10 +1,11 @@
-from flask import Flask, render_template, url_for, redirect, request
+from flask import render_template, url_for, redirect, request, session
 from app import app, spotify
 from app.forms import EmptyForm
-from random import randint
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-import os
+
+@app.route('/test')
+def test(): #FOR TESTING PURPOSES! 
+    return f"""TESTING PAGE""" 
 
 @app.route('/')
 def index():
@@ -15,11 +16,40 @@ def index():
     form = EmptyForm()
     return render_template('index.html', current_song=current_song, form=form)
 
-@app.route('/test')
-def test():
-    currently_playing = spotify.currently_playing()
-    if currently_playing:
-        song = currently_playing["item"]["name"]
-        album = currently_playing["item"]["album"]["name"]
-    else: song = album = None
-    return render_template('test.html', song=song, album=album) 
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+@app.route('/spotify_login')
+def spotify_login():
+    auth_manager = spotify.make_oauth()
+    return redirect(auth_manager.get_authorize_url())
+
+@app.route('/callback')
+def spotify_callback():
+    auth_manager = spotify.make_oauth()
+    code = request.args.get("code")
+
+    if not code:
+        return "Spotify login failed", 400
+
+    token_info = auth_manager.get_access_token(code=code)
+    session["spotify_token"] = token_info
+
+    return redirect(url_for("playlists"))
+
+@app.route('/playlists')
+def playlists():
+    token = session.get("spotify_token")
+    if not token:
+        return redirect(url_for("login"))
+
+    sp = spotipy.Spotify(auth=token["access_token"])
+    playlists = sp.current_user_playlists()
+
+    playlist_names = []
+    if playlists is not None:
+        for playlist in playlists["items"]:
+            playlist_names.append(playlist["name"])
+    
+    return render_template('playlists.html', playlists=playlist_names)

@@ -14,9 +14,15 @@
         <p>No song playing</p>
         {% endif %}
         <p>
-            <form action="{{ url_for('index') }}">
+            <form action="{{ url_for('test') }}">
                 {{ form.hidden_tag() }}
-                {{ form.submit(value="Refresh") }}
+                {{ form.submit(value="GO TO /TEST") }}
+            </form>
+        </p>
+        <p>
+            <form action="{{ url_for('playlists') }}">
+                {{ form.hidden_tag() }}
+                {{ form.submit(value="GO TO /PLAYLISTS") }}
             </form>
         </p>
     </body>
